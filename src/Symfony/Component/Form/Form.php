@@ -944,7 +944,7 @@ class Form implements \IteratorAggregate, FormInterface
      * @param FormInterface $child The child to be added.
      *
      * @throws AlreadyBoundException If the form has already been bound.
-     * @throws FormException When trying to add a child to a non-compound form.
+     * @throws FormException         When trying to add a child to a non-compound form.
      *
      * @see self::add()
      */
