@@ -1377,7 +1377,7 @@ class FrameworkExtension extends Extension
         $loader->load('secrets.xml');
 
         $container->getDefinition('secrets.storage.files')->replaceArgument(0, $config['encrypted_secrets_dir']);
-        $container->getDefinition('secrets.storage.files')->replaceArgument(1, $config['encryption_key']);
+        $container->getDefinition('secrets.encoder.sodium')->replaceArgument(0, $config['encryption_key']);
     }
 
     private function registerSecurityCsrfConfiguration(array $config, ContainerBuilder $container, XmlFileLoader $loader)

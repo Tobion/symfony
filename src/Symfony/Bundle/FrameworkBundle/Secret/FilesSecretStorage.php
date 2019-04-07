@@ -2,8 +2,13 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Secret;
 
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
+
 class FilesSecretStorage implements SecretStorageInterface
 {
+    private const FILE_SUFFIX = '.bin';
+
     /**
      * @var string
      */
@@ -11,12 +16,14 @@ class FilesSecretStorage implements SecretStorageInterface
     /**
      * @var string
      */
-    private $encryptionKey;
+    private $filesystem;
+    private $encoder;
 
-    public function __construct(string $secretsFolder, string $encryptionKey)
+    public function __construct(string $secretsFolder, EncoderInterface $encoder)
     {
-        $this->secretsFolder = $secretsFolder;
-        $this->encryptionKey = $encryptionKey;
+        $this->secretsFolder = rtrim($secretsFolder, DIRECTORY_SEPARATOR);
+        $this->filesystem = new Filesystem();
+        $this->encoder = $encoder;
     }
 
     public function getSecret(string $key): string
@@ -26,44 +33,34 @@ class FilesSecretStorage implements SecretStorageInterface
 
     public function putSecret(string $key, string $secret): void
     {
-        $nonce = random_bytes(SODIUM_CRYPTO_STREAM_NONCEBYTES);
-        $ciphertext = sodium_crypto_stream_xor($secret, $nonce, $this->encryptionKey);
-
-        sodium_memzero($secret);
-
-        $message = new EncryptedMessage($ciphertext, $nonce);
-
-        file_put_contents($this->getFilePath($key), (string) $message);
+        $this->filesystem->dumpFile($this->getFilePath($key), $this->encoder->encrypt($secret));
     }
 
     public function deleteSecret(string $key): void
     {
-        unlink($this->getFilePath($key));
+        $this->filesystem->remove($this->getFilePath($key));
     }
 
     public function listSecrets(): iterable
     {
-        foreach (scandir($this->secretsFolder) as $fileName) {
-            if ('.' === $fileName || '..' === $fileName) {
-                continue;
-            }
+        if (!$this->filesystem->exists($this->secretsFolder)) {
+            return;
+        }
 
-            $key = basename($fileName, '.bin');
+        /** @var File $file */
+        foreach ((new Finder())->in($this->secretsFolder)->files() as $file) {
+            $key = $file->getBasename(SELF::FILE_SUFFIX);
             yield $key => $this->getSecret($key);
         }
     }
 
     private function decryptFile(string $filePath): string
     {
-        $encrypted = file_get_contents($filePath);
-
-        $message = EncryptedMessage::createFromString($encrypted);
-
-        return sodium_crypto_stream_xor($message->getCiphertext(), $message->getNonce(), $this->encryptionKey);
+        return $this->encoder->decrypt(file_get_contents($filePath));
     }
 
     private function getFilePath(string $key): string
     {
-        return $this->secretsFolder.$key.'.bin';
+        return $this->secretsFolder.DIRECTORY_SEPARATOR.$key.self::FILE_SUFFIX;
     }
 }

@@ -171,6 +171,7 @@
         </service>
 
         <service id="console.command.secrets_generate_key" class="Symfony\Bundle\FrameworkBundle\Command\SecretsGenerateKeyCommand">
+            <argument type="service" id="secrets.encoder.sodium"/>
             <tag name="console.command" command="secrets:generate-key" />
         </service>
 
