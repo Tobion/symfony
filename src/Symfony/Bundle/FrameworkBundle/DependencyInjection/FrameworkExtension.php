@@ -1370,6 +1370,7 @@ class FrameworkExtension extends Extension
     {
         if (!$this->isConfigEnabled($container, $config)) {
             $container->removeDefinition('console.command.secrets_add');
+            $container->removeDefinition('console.command.secrets_list');
 
             return;
         }
