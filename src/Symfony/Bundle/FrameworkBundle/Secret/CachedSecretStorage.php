@@ -24,55 +24,34 @@ class CachedSecretStorage implements SecretStorageInterface
 
     public function getSecret(string $key): string
     {
-        $cacheItem = $this->cache->getItem('secrets.php');
+        $cacheItem = $this->cache->getItem($this->getCacheKey($key));
+        if (!$cacheItem->isHit()) {
+            $cacheItem->set($this->decoratedStorage->getSecret($key));
 
-        if ($cacheItem->isHit()) {
-            $secrets = $cacheItem->get();
-            if (isset($secrets[$key])) {
-                return $secrets[$key];
-            }
+            $this->cache->save($cacheItem);
         }
 
-        $this->regenerateCache($cacheItem);
-
-        return $this->decoratedStorage->getSecret($key);
+        return $cacheItem->get();
     }
 
     public function putSecret(string $key, string $secret): void
     {
         $this->decoratedStorage->putSecret($key, $secret);
-        $this->regenerateCache();
+        $this->cache->deleteItem($this->getCacheKey($key));
     }
 
     public function deleteSecret(string $key): void
     {
         $this->decoratedStorage->deleteSecret($key);
-        $this->regenerateCache();
+        $this->cache->deleteItem($this->getCacheKey($key));
     }
 
-    public function listSecrets(): iterable
+    public function listKeys(): iterable
     {
-        $cacheItem = $this->cache->getItem('secrets.php');
-
-        if ($cacheItem->isHit()) {
-            return $cacheItem->get();
-        }
-
-        return $this->regenerateCache($cacheItem);
+        return $this->decoratedStorage->listKeys();
     }
 
-    private function regenerateCache(?CacheItemInterface $cacheItem = null): array
-    {
-        $cacheItem = $cacheItem ?? $this->cache->getItem('secrets.php');
-
-        $secrets = [];
-        foreach ($this->decoratedStorage->listSecrets() as $key => $secret) {
-            $secrets[$key] = $secret;
-        }
-
-        $cacheItem->set($secrets);
-        $this->cache->save($cacheItem);
-
-        return $secrets;
+    private function getCacheKey(string $key){
+        return md5(__CLASS__.$key);
     }
 }

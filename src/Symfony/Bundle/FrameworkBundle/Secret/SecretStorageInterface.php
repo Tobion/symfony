@@ -10,5 +10,5 @@ interface SecretStorageInterface
 
     public function deleteSecret(string $key): void;
 
-    public function listSecrets(): iterable;
+    public function listKeys(): iterable;
 }

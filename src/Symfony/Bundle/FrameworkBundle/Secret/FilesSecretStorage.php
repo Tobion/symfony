@@ -41,15 +41,14 @@ class FilesSecretStorage implements SecretStorageInterface
         unlink($this->getFilePath($key));
     }
 
-    public function listSecrets(): iterable
+    public function listKeys(): iterable
     {
         foreach (scandir($this->secretsFolder) as $fileName) {
             if ('.' === $fileName || '..' === $fileName) {
                 continue;
             }
 
-            $key = basename($fileName, '.bin');
-            yield $key => $this->getSecret($key);
+            yield basename($fileName, '.bin');
         }
     }
 
