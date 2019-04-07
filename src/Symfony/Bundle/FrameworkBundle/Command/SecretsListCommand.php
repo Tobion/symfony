@@ -7,6 +7,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 final class SecretsListCommand extends Command
 {
@@ -33,13 +34,13 @@ final class SecretsListCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $table = new Table($output);
-        $table->setHeaders(['key', 'plaintext secret']);
+        $io = new SymfonyStyle($input, $output);
 
+        $rows = [];
         foreach ($this->secretStorage->listSecrets() as $key => $secret) {
-            $table->addRow([$key, $secret]);
+            $rows[] = [$key, $secret];
         }
 
-        $table->render();
+        $io->table(['key', 'plaintext secret'], $rows);
     }
 }

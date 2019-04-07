@@ -4,11 +4,11 @@ namespace Symfony\Bundle\FrameworkBundle\Command;
 
 use Symfony\Bundle\FrameworkBundle\Secret\SecretStorageInterface;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 final class SecretsAddCommand extends Command
 {
@@ -51,18 +51,21 @@ final class SecretsAddCommand extends Command
 
     protected function interact(InputInterface $input, OutputInterface $output)
     {
-        /** @var QuestionHelper $helper */
-        $helper = $this->getHelper('question');
+        $io = new SymfonyStyle($input, $output);
 
-        $question = new Question('Key of the secret: ', $input->getArgument('key'));
-
-        $key = $helper->ask($input, $output, $question);
+        $question = new Question('Key of the secret', $input->getArgument('key'));
+        $key = $io->askQuestion($question);
+        if (empty($key)) {
+            throw new \RuntimeException('The "key" can not be empty');
+        }
         $input->setArgument('key', $key);
 
-        $question = new Question('Plaintext secret value: ', $input->getArgument('secret'));
+        $question = new Question('Plaintext secret value', $input->getArgument('secret'));
         $question->setHidden(true);
-
-        $secret = $helper->ask($input, $output, $question);
+        $secret = $io->askQuestion($question);
+        if (empty($secret)) {
+            throw new \RuntimeException('The "secret" can not be empty');
+        }
         $input->setArgument('secret', $secret);
     }
 }

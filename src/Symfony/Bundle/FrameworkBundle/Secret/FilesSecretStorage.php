@@ -2,6 +2,8 @@
 
 namespace Symfony\Bundle\FrameworkBundle\Secret;
 
+use Symfony\Component\Filesystem\Filesystem;
+
 class FilesSecretStorage implements SecretStorageInterface
 {
     /**
@@ -12,11 +14,13 @@ class FilesSecretStorage implements SecretStorageInterface
      * @var string
      */
     private $encryptionKey;
+    private $filesystem;
 
     public function __construct(string $secretsFolder, string $encryptionKey)
     {
-        $this->secretsFolder = $secretsFolder;
+        $this->secretsFolder = rtrim($secretsFolder, DIRECTORY_SEPARATOR);
         $this->encryptionKey = $encryptionKey;
+        $this->filesystem = new Filesystem();
     }
 
     public function getSecret(string $key): string
@@ -33,16 +37,20 @@ class FilesSecretStorage implements SecretStorageInterface
 
         $message = new EncryptedMessage($ciphertext, $nonce);
 
-        file_put_contents($this->getFilePath($key), (string) $message);
+        $this->filesystem->dumpFile($this->getFilePath($key), (string) $message);
     }
 
     public function deleteSecret(string $key): void
     {
-        unlink($this->getFilePath($key));
+        $this->filesystem->remove($this->getFilePath($key));
     }
 
     public function listSecrets(): iterable
     {
+        if (!$this->filesystem->exists($this->secretsFolder)) {
+            return;
+        }
+
         foreach (scandir($this->secretsFolder) as $fileName) {
             if ('.' === $fileName || '..' === $fileName) {
                 continue;
@@ -64,6 +72,6 @@ class FilesSecretStorage implements SecretStorageInterface
 
     private function getFilePath(string $key): string
     {
-        return $this->secretsFolder.$key.'.bin';
+        return $this->secretsFolder.DIRECTORY_SEPARATOR.$key.'.bin';
     }
 }

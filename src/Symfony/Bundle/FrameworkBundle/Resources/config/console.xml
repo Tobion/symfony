@@ -4,6 +4,10 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd">
 
+    <parameters>
+        <parameter key="env(SECRET_KEY_PATH)">%kernel.project_dir%/config/secrets/%kernel.environment%/secrets.key</parameter>
+    </parameters>
+
     <services>
         <defaults public="false" />
 
@@ -171,6 +175,7 @@
         </service>
 
         <service id="console.command.secrets_generate_key" class="Symfony\Bundle\FrameworkBundle\Command\SecretsGenerateKeyCommand">
+            <argument>%env(SECRET_KEY_PATH)%</argument>
             <tag name="console.command" command="secrets:generate-key" />
         </service>
 
